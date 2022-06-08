@@ -1,0 +1,1961 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>On Illuminant Detection</title>
+<style>
+* { margin:20px auto; max-width:960px;}
+p { font-size:large; }
+ul{ line-height: 1em;}
+
+#results-table
+{
+	font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
+	font-size: 13px;
+	margin: 10px;
+	width: 940px;
+	text-align: middle;
+	border-collapse: collapse;
+	border: 1px solid #69c;
+}
+#results-table th
+{
+	padding: 10px 40px 10px 40px;
+	font-weight: normal;
+	font-size: 14px;
+	color: #039;
+	text-align: center;
+	border-bottom: 1px dashed #69c;
+}
+#results-table td
+{
+	padding: 5px 5px 5px 5px;
+	color: #669;
+	text-align: center;
+}
+#results-table tbody tr:hover td
+{
+	color: #339;
+	background: #d0dafd;
+}
+</style>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-49238599-1', 'nus.edu.sg');
+  ga('send', 'pageview');
+</script>
+<script src="trackdownloads.js"></script>
+
+</head>
+
+<body>
+
+
+<center><h1></br>Illuminant Estimation for Color Constancy:</h1><h2>Why spatial domain methods work and the role of the color distribution</h2></center></br>
+
+<center>
+<a href="mailto:dongliang.cheng@u.nus.edu?Subject=On%20Illuminant%20Estimation" target="_blank">Dongliang Cheng</a>
+<!-- <a href='#' onclick='ExternalInterface.call("window.open", "mailto:dcheng@comp.nus.edu.sg?Subject=On%20Illuminant%20Estimation");    ExternalInterface.call("function(link){window.location.href = link}", "mailto:dcheng@comp.nus.edu.sg?Subject=On%20Illuminant%20Estimation");'>Dongliang Cheng</a> -->
+<!-- <a href="javascript:void(0);" onclick="javascript:window.location.href='mailto:dongliang.cheng@u.nus.edu?Subject=On%20Illuminant%20Estimation'; return false;">Dongliang Cheng</a> -->
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+<a href="http://www.comp.nus.edu.sg/~dilip/" target="_blank">Dilip K. Prasad</a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="http://www.comp.nus.edu.sg/~brown/" target="_blank">Michael S. Brown</a>
+</center>
+
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+
+<center><img src='images/teaser.png' width = '720'></center>
+
+<h2 style="margin:15px auto; max-width:960px;">Abstract:</h2>
+<p>Color constancy is a well studied topic in color vision.  Methods are generally categorized as: 1) low-level statistical methods; 2) gamut-based methods; 3) and learning-based methods.  In this work, we distinguish methods depending on whether they work directly from color values (i.e. color domain) or from values obtained from the image spatial information (e.g. image gradients/frequencies). We show that spatial information does not provide any additional information that cannot be obtained directly from the color distributions and that the indirect aim of spatial domain methods is to obtain large color differences for estimating the illumination direction. This finding allowed us to develop a simple and efficient illumination estimation method that chooses bright and dark pixels using a projection distance in the color distribution and then applies PCA to estimate the illumination direction. Our method gives state-of-the-art results on existing public illumination datasets as well as on our newly collected dataset containing 1736 images from 8 different cameras.</p>
+
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+
+
+<h2 style="margin:15px auto; max-width:960px;">Results on existing Datasets:</h2>
+
+<center><h3>Re-processed Version of Color Checker Database from Shi and Funt</h3></center>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead>
+<tr style="background-color: #cccccc;">
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style='text-align: left;'><a href='files\ae_Shi.mat' id='results_Shi'  target="_blank">Proposed</a> (3.5%)</td> 
+<td>3.52</td>
+<td>2.14</td>
+<td>2.47</td>
+<td>0.50</td>
+<td>8.74</td>
+<td>28.35</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>6.36</td>
+<td>6.28</td>
+<td>6.28</td>
+<td>2.33</td>
+<td>10.58</td>
+<td>24.83</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>7.55</td>
+<td>5.68</td>
+<td>6.35</td>
+<td>1.45</td>
+<td>16.12</td>
+<td>40.58</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=4)</td>
+<td>4.93</td>
+<td>4.01</td>
+<td>4.23</td>
+<td>1.14</td>
+<td>10.20</td>
+<td>22.40</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=9, &sigma;=9)</td>
+<td>4.66</td>
+<td>3.48</td>
+<td>3.81</td>
+<td>1.00</td>
+<td>10.09</td>
+<td>22.04</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=1, &sigma;=6)</td>
+<td>5.33</td>
+<td>4.52</td>
+<td>4.73</td>
+<td>1.86</td>
+<td>10.03</td>
+<td>26.35</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=1, &sigma;=1)</td>
+<td>5.13</td>
+<td>4.44</td>
+<td>4.62</td>
+<td>2.11</td>
+<td>9.26</td>
+<td>23.88</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=2, 2%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.98</td>
+<td style='border-bottom: 1px dashed #69c;'>2.61</td>
+<td style='border-bottom: 1px dashed #69c;'>-</td>
+<td style='border-bottom: 1px dashed #69c;'>-</td>
+<td style='border-bottom: 1px dashed #69c;'>-</td>
+<td style='border-bottom: 1px dashed #69c;'>-</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=4)</td>
+<td>4.20</td>
+<td>2.33</td>
+<td>2.91</td>
+<td>0.50</td>
+<td>10.72</td>
+<td>23.18</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=4)</td>
+<td>6.52</td>
+<td>5.04</td>
+<td>5.43</td>
+<td>1.90</td>
+<td>13.58</td>
+<td>28.99</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=9)</td>
+<td>4.20</td>
+<td>2.39</td>
+<td>2.93</td>
+<td>0.51</td>
+<td>10.70</td>
+<td>24.22</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>4.82</td>
+<td>3.46</td>
+<td>3.88</td>
+<td>1.26</td>
+<td>10.49</td>
+<td>24.48</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>3.67</td>
+<td>2.96</td>
+<td>3.10</td>
+<td>0.95</td>
+<td>7.61</td>
+<td>21.58</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>3.59</td>
+<td>2.96</td>
+<td>3.10</td>
+<td>0.95</td>
+<td>7.61</td>
+<td>21.58</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>4.19</td>
+<td>3.13</td>
+<td>3.45</td>
+<td>1.00</td>
+<td>9.22</td>
+<td>26.20</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bottom-up+Top-down</td>
+<td>3.48</td>
+<td>2.47</td>
+<td>2.61</td>
+<td>0.84</td>
+<td>8.01</td>
+<td>25.22</td>
+</tr>
+</tbody>
+</table>
+</center>
+<h4 style='padding=5px'>Note:</h4>
+* All static methods are reported using the best results from the several parameters tested (same in the following tables)</br>
+* Any algorithm that requires learning is trained and tested using a three-fold cross-validation as used in others' experiment (same in the following tables)</br>
+* Best 25% error is the mean of the smallest 25% error values (same in the following tables)</br>
+* Worst 25% error is the mean of the highest 25% error values (same in the following tables)</br>
+* All other methods results collected from <a href='http://colorconstancy.com/'  target="_blank">colorconstancy.com</a></br>
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+
+
+<h2 style="margin:15px auto; max-width:960px;">Newly Collected Datasets:</h2>
+<p>For our own collected image datasets from 9 different cameras, some example scenes of the datasets are shown below.</p>
+
+<table border="0" cellpadding="5" cellspacing="0" style="margin:0px auto 0px auto;">
+<td><img src='images/thumb_DSCF1213.jpg'></td>
+<td><img src='images/thumb_DSCF1249.jpg'></td>
+</table>
+
+<table border="0" cellpadding="5" cellspacing="0" style="margin:0px auto 0px auto;">
+<td><img src='images/thumb_DSCF1152.jpg'></td>
+<td><img src='images/thumb_DSCF1282.jpg'></td>
+</table>
+
+<table border="0" cellpadding="5" cellspacing="0" style="margin:0px auto 0px auto;">
+<td><img src='images/thumb_DSCF1136.jpg'></td>
+<td><img src='images/thumb_DSCF1215.jpg'></td>
+<td><img src='images/thumb_DSCF1227.jpg'></td>
+</table>
+
+<p>The data is available in three formats: (1) camera-specific RAW format free of any manipulation, (2) DCRAW-converted linear images which can be read and used directly, as well as (3) camera JPEG outputs for the purpose of viewing the image content. In order to get original linear raw data, DCRAW command line arguments '-D -4 -T' was used. No further demosaicing was done, but only downsampling according to camera's bayer pattern to create a color image. To be noted, care had been taken for the Fujifilm X-M1 camera, which has a novel 6*6 bayer pattern. For each image, co-ordinates for the color-checker inside the image are also provided, as well as small region masks for every color patch. The ground truth illuminants were obtained from the difference of the two most brightest achromatic patches containing no saturated value to get rid of the effects from the dark level and saturation level of the sensor. In order to use those images, dark level has to be subtracted from the original images, which is provided in the ground truth .mat file.</p>
+
+<p> Datesets and results are divided according to the cameras: (click on the camera name to see the according results)</p>
+
+<table style='width: 940px; text-align: center;'>
+<thead>
+<tr>
+<th scope="col" width='200px'>CAMERA</th>
+<th scope="col" width='200px'>RAW</th>
+<th scope="col" width='130px'>JPEG</th>
+<th scope="col" width='180px'>PNG</th>
+<th scope="col" width='90px'>MASK</th>
+<th scope="col" width='100px'>GROUNDTRUTH</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#Canon1DsMkIII">Canon EOS-1Ds Mark III</a></td> 
+<td><a href= 'files/Canon1DsMkIII_RAW.zip.001' id = 'RAW_Canon1DsMkIII_1'  target="_blank">ZIP1</a>
+    <a href= 'files/Canon1DsMkIII_RAW.zip.002' id = 'RAW_Canon1DsMkIII_2' target="_blank">ZIP2</a> 
+    <a href= 'files/Canon1DsMkIII_RAW.zip.003' id = 'RAW_Canon1DsMkIII_3' target="_blank">ZIP3</a>
+    <a href= 'files/Canon1DsMkIII_RAW.zip.004' id = 'RAW_Canon1DsMkIII_4' target="_blank">ZIP4</a>
+    <a href= 'files/Canon1DsMkIII_RAW.zip.005' id = 'RAW_Canon1DsMkIII_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/Canon1DsMkIII_JPG.zip.001' id = 'JPG_Canon1DsMkIII_1' target="_blank">ZIP1</a>
+    <a href= 'files/Canon1DsMkIII_JPG.zip.002' id = 'JPG_Canon1DsMkIII_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/Canon1DsMkIII_PNG.zip.001' id = 'PNG_Canon1DsMkIII_1' target="_blank">ZIP1</a>
+    <a href= 'files/Canon1DsMkIII_PNG.zip.002' id = 'PNG_Canon1DsMkIII_2' target="_blank">ZIP2</a> 
+    <a href= 'files/Canon1DsMkIII_PNG.zip.003' id = 'PNG_Canon1DsMkIII_3' target="_blank">ZIP3</a>
+    <a href= 'files/Canon1DsMkIII_PNG.zip.004' id = 'PNG_Canon1DsMkIII_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/Canon1DsMkIII_CHECKER.zip' id = 'CHK_Canon1DsMkIII'   target="_blank">ZIP</a></td>
+<td><a href= 'files/Canon1DsMkIII_gt.mat'      id = 'GTM_Canon1DsMkIII'   target="_blank">MAT</a></td></tr>
+
+<tr>
+<td><a href="#Canon600D">Canon EOS 600D</a></td>
+<td><a href= 'files/Canon600D_RAW.zip.001' id = 'RAW_Canon600D_1' target="_blank">ZIP1</a>
+    <a href= 'files/Canon600D_RAW.zip.002' id = 'RAW_Canon600D_2' target="_blank">ZIP2</a> 
+    <a href= 'files/Canon600D_RAW.zip.003' id = 'RAW_Canon600D_3' target="_blank">ZIP3</a>
+    <a href= 'files/Canon600D_RAW.zip.004' id = 'RAW_Canon600D_4' target="_blank">ZIP4</a>
+    <a href= 'files/Canon600D_RAW.zip.005' id = 'RAW_Canon600D_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/Canon600D_JPG.zip.001' id = 'JPG_Canon600D_1' target="_blank">ZIP1</a>
+    <a href= 'files/Canon600D_JPG.zip.002' id = 'JPG_Canon600D_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/Canon600D_PNG.zip.001' id = 'PNG_Canon600D_1' target="_blank">ZIP1</a>
+    <a href= 'files/Canon600D_PNG.zip.002' id = 'PNG_Canon600D_2' target="_blank">ZIP2</a> 
+    <a href= 'files/Canon600D_PNG.zip.003' id = 'PNG_Canon600D_3' target="_blank">ZIP3</a>
+    <a href= 'files/Canon600D_PNG.zip.004' id = 'PNG_Canon600D_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/Canon600D_CHECKER.zip' id = 'CHK_Canon600D'   target="_blank">ZIP</a></td>
+<td><a href= 'files/Canon600D_gt.mat'      id = 'GTM_Canon600D'   target="_blank">MAT</a></td></tr>
+
+<tr>
+<td><a href="#FujifilmXM1">Fujifilm X-M1</a></td> 
+<td><a href= 'files/FujifilmXM1_RAW.zip.001' id = 'RAW_FujifilmXM1_1' target="_blank">ZIP1</a>
+    <a href= 'files/FujifilmXM1_RAW.zip.002' id = 'RAW_FujifilmXM1_2' target="_blank">ZIP2</a> 
+    <a href= 'files/FujifilmXM1_RAW.zip.003' id = 'RAW_FujifilmXM1_3' target="_blank">ZIP3</a>
+    <a href= 'files/FujifilmXM1_RAW.zip.004' id = 'RAW_FujifilmXM1_4' target="_blank">ZIP4</a>
+    <a href= 'files/FujifilmXM1_RAW.zip.005' id = 'RAW_FujifilmXM1_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/FujifilmXM1_JPG.zip.001' id = 'JPG_FujifilmXM1_1' target="_blank">ZIP1</a>
+    <a href= 'files/FujifilmXM1_JPG.zip.002' id = 'JPG_FujifilmXM1_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/FujifilmXM1_PNG.zip.001' id = 'PNG_FujifilmXM1_1' target="_blank">ZIP1</a>
+    <a href= 'files/FujifilmXM1_PNG.zip.002' id = 'PNG_FujifilmXM1_2' target="_blank">ZIP2</a> 
+    <a href= 'files/FujifilmXM1_PNG.zip.003' id = 'PNG_FujifilmXM1_3' target="_blank">ZIP3</a>
+    <a href= 'files/FujifilmXM1_PNG.zip.004' id = 'PNG_FujifilmXM1_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/FujifilmXM1_CHECKER.zip' id = 'CHK_FujifilmXM1'   target="_blank">ZIP</a></td>
+<td><a href= 'files/FujifilmXM1_gt.mat'      id = 'GTM_FujifilmXM1'   target="_blank">MAT</a></td></tr>
+
+<tr>
+<td><a href="#NikonD5200">Nikon D5200</a></td> 
+<td><a href= 'files/NikonD5200_RAW.zip.001' id = 'RAW_NikonD5200_1' target="_blank">ZIP1</a>
+    <a href= 'files/NikonD5200_RAW.zip.002' id = 'RAW_NikonD5200_2' target="_blank">ZIP2</a> 
+    <a href= 'files/NikonD5200_RAW.zip.003' id = 'RAW_NikonD5200_3' target="_blank">ZIP3</a>
+    <a href= 'files/NikonD5200_RAW.zip.004' id = 'RAW_NikonD5200_4' target="_blank">ZIP4</a>
+    <a href= 'files/NikonD5200_RAW.zip.005' id = 'RAW_NikonD5200_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/NikonD5200_JPG.zip.001' id = 'JPG_NikonD5200_1' target="_blank">ZIP1</a>
+    <a href= 'files/NikonD5200_JPG.zip.002' id = 'JPG_NikonD5200_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/NikonD5200_PNG.zip.001' id = 'PNG_NikonD5200_1' target="_blank">ZIP1</a>
+    <a href= 'files/NikonD5200_PNG.zip.002' id = 'PNG_NikonD5200_2' target="_blank">ZIP2</a> 
+    <a href= 'files/NikonD5200_PNG.zip.003' id = 'PNG_NikonD5200_3' target="_blank">ZIP3</a>
+    <a href= 'files/NikonD5200_PNG.zip.004' id = 'PNG_NikonD5200_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/NikonD5200_CHECKER.zip' id = 'CHK_NikonD5200'   target="_blank">ZIP</a></td>
+<td><a href= 'files/NikonD5200_gt.mat'      id = 'GTM_NikonD5200'   target="_blank">MAT</a></td></tr>
+
+<tr>
+<td><a href="#OlympusEPL6">Olympus E-PL6</a></td> 
+<td><a href= 'files/OlympusEPL6_RAW.zip.001' id = 'RAW_OlympusEPL6_1' target="_blank">ZIP1</a>
+    <a href= 'files/OlympusEPL6_RAW.zip.002' id = 'RAW_OlympusEPL6_2' target="_blank">ZIP2</a> 
+    <a href= 'files/OlympusEPL6_RAW.zip.003' id = 'RAW_OlympusEPL6_3' target="_blank">ZIP3</a>
+    <a href= 'files/OlympusEPL6_RAW.zip.004' id = 'RAW_OlympusEPL6_4' target="_blank">ZIP4</a>
+    <a href= 'files/OlympusEPL6_RAW.zip.005' id = 'RAW_OlympusEPL6_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/OlympusEPL6_JPG.zip.001' id = 'JPG_OlympusEPL6_1' target="_blank">ZIP1</a>
+    <a href= 'files/OlympusEPL6_JPG.zip.002' id = 'JPG_OlympusEPL6_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/OlympusEPL6_PNG.zip.001' id = 'PNG_OlympusEPL6_1' target="_blank">ZIP1</a>
+    <a href= 'files/OlympusEPL6_PNG.zip.002' id = 'PNG_OlympusEPL6_2' target="_blank">ZIP2</a> 
+    <a href= 'files/OlympusEPL6_PNG.zip.003' id = 'PNG_OlympusEPL6_3' target="_blank">ZIP3</a>
+    <a href= 'files/OlympusEPL6_PNG.zip.004' id = 'PNG_OlympusEPL6_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/OlympusEPL6_CHECKER.zip' id = 'CHK_OlympusEPL6'   target="_blank">ZIP</a></td>
+<td><a href= 'files/OlympusEPL6_gt.mat'      id = 'GTM_OlympusEPL6'   target="_blank">MAT</a></td></tr>
+
+<tr>
+<td><a href="#PanasonicGX1">Panasonic Lumix DMC-GX1</a></td> 
+<td><a href= 'files/PanasonicGX1_RAW.zip.001' id = 'RAW_PanasonicGX1_1' target="_blank">ZIP1</a>
+    <a href= 'files/PanasonicGX1_RAW.zip.002' id = 'RAW_PanasonicGX1_2' target="_blank">ZIP2</a> 
+    <a href= 'files/PanasonicGX1_RAW.zip.003' id = 'RAW_PanasonicGX1_3' target="_blank">ZIP3</a>
+    <a href= 'files/PanasonicGX1_RAW.zip.004' id = 'RAW_PanasonicGX1_4' target="_blank">ZIP4</a>
+    <a href= 'files/PanasonicGX1_RAW.zip.005' id = 'RAW_PanasonicGX1_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/PanasonicGX1_JPG.zip.001' id = 'JPG_PanasonicGX1_1' target="_blank">ZIP1</a>
+    <a href= 'files/PanasonicGX1_JPG.zip.002' id = 'JPG_PanasonicGX1_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/PanasonicGX1_PNG.zip.001' id = 'PNG_PanasonicGX1_1' target="_blank">ZIP1</a>
+    <a href= 'files/PanasonicGX1_PNG.zip.002' id = 'PNG_PanasonicGX1_2' target="_blank">ZIP2</a> 
+    <a href= 'files/PanasonicGX1_PNG.zip.003' id = 'PNG_PanasonicGX1_3' target="_blank">ZIP3</a>
+    <a href= 'files/PanasonicGX1_PNG.zip.004' id = 'PNG_PanasonicGX1_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/PanasonicGX1_CHECKER.zip' id = 'CHK_PanasonicGX1'   target="_blank">ZIP</a></td>
+<td><a href= 'files/PanasonicGX1_gt.mat'      id = 'GTM_PanasonicGX1'   target="_blank">MAT</a></td></tr>
+
+<tr>
+<td><a href="#SamsungNX2000">Samsung NX2000</a></td> 
+<td><a href= 'files/SamsungNX2000_RAW.zip.001' id = 'RAW_SamsungNX2000_1' target="_blank">ZIP1</a>
+    <a href= 'files/SamsungNX2000_RAW.zip.002' id = 'RAW_SamsungNX2000_2' target="_blank">ZIP2</a> 
+    <a href= 'files/SamsungNX2000_RAW.zip.003' id = 'RAW_SamsungNX2000_3' target="_blank">ZIP3</a>
+    <a href= 'files/SamsungNX2000_RAW.zip.004' id = 'RAW_SamsungNX2000_4' target="_blank">ZIP4</a>
+    <a href= 'files/SamsungNX2000_RAW.zip.005' id = 'RAW_SamsungNX2000_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/SamsungNX2000_JPG.zip.001' id = 'JPG_SamsungNX2000_1' target="_blank">ZIP1</a>
+    <a href= 'files/SamsungNX2000_JPG.zip.002' id = 'JPG_SamsungNX2000_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/SamsungNX2000_PNG.zip.001' id = 'PNG_SamsungNX2000_1' target="_blank">ZIP1</a>
+    <a href= 'files/SamsungNX2000_PNG.zip.002' id = 'PNG_SamsungNX2000_2' target="_blank">ZIP2</a> 
+    <a href= 'files/SamsungNX2000_PNG.zip.003' id = 'PNG_SamsungNX2000_3' target="_blank">ZIP3</a>
+    <a href= 'files/SamsungNX2000_PNG.zip.004' id = 'PNG_SamsungNX2000_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/SamsungNX2000_CHECKER.zip' id = 'CHK_SamsungNX2000'   target="_blank">ZIP</a></td>
+<td><a href= 'files/SamsungNX2000_gt.mat'      id = 'GTM_SamsungNX2000'   target="_blank">MAT</a></td></tr>
+
+<tr>
+<td><a href="#SonyA57">Sony SLT-A57</a></td> 
+<td><a href= 'files/SonyA57_RAW.zip.001' id = 'RAW_SonyA57_1' target="_blank">ZIP1</a>
+    <a href= 'files/SonyA57_RAW.zip.002' id = 'RAW_SonyA57_2' target="_blank">ZIP2</a> 
+    <a href= 'files/SonyA57_RAW.zip.003' id = 'RAW_SonyA57_3' target="_blank">ZIP3</a>
+    <a href= 'files/SonyA57_RAW.zip.004' id = 'RAW_SonyA57_4' target="_blank">ZIP4</a>
+    <a href= 'files/SonyA57_RAW.zip.005' id = 'RAW_SonyA57_5' target="_blank">ZIP5</a></td>
+<td><a href= 'files/SonyA57_JPG.zip.001' id = 'JPG_SonyA57_1' target="_blank">ZIP1</a>
+    <a href= 'files/SonyA57_JPG.zip.002' id = 'JPG_SonyA57_2' target="_blank">ZIP2</a></td>
+<td><a href= 'files/SonyA57_PNG.zip.001' id = 'PNG_SonyA57_1' target="_blank">ZIP1</a>
+    <a href= 'files/SonyA57_PNG.zip.002' id = 'PNG_SonyA57_2' target="_blank">ZIP2</a> 
+    <a href= 'files/SonyA57_PNG.zip.003' id = 'PNG_SonyA57_3' target="_blank">ZIP3</a>
+    <a href= 'files/SonyA57_PNG.zip.004' id = 'PNG_SonyA57_4' target="_blank">ZIP4</a></td>
+<td><a href= 'files/SonyA57_CHECKER.zip' id = 'CHK_SonyA57'   target="_blank">ZIP</a></td>
+<td><a href= 'files/SonyA57_gt.mat'      id = 'GTM_SonyA57'   target="_blank">MAT</a></td></tr>
+</tbody>
+</table>
+
+<!-- <ul>
+<li><a href="#Canon1DsMkIII">Canon EOS-1Ds Mark III</a></li>
+<li><a href="#Canon600D">Canon EOS 600D</a></li>
+<li><a href="#FujifilmXM1">Fujifilm X-M1</a></li>
+<li><a href="#NikonD5200">Nikon D5200</a></li>
+<li><a href="#OlympusEPL6">Olympus E-PL6</a></li>
+<li><a href="#PanasonicGX1">Panasonic Lumix DMC-GX1</a></li>
+<li><a href="#SamsungNX2000">Samsung NX2000</a></li>
+<li><a href="#SonyA57">Sony SLT-A57</a></li>
+</ul> -->
+<p>And another extra camera with smaller number of images is also provided here:
+
+<table style='width: 940px; text-align: center;'>
+<thead>
+<tr>
+<th scope="col" width='200px'>CAMERA</th>
+<th scope="col" width='200px'>RAW</th>
+<th scope="col" width='130px'>JPEG</th>
+<th scope="col" width='180px'>PNG</th>
+<th scope="col" width='90px'>MASK</th>
+<th scope="col" width='100px'>GROUNDTRUTH</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#NikonD40">Nikon D40</a></td>
+<td><a href= 'files/NikonD40_RAW.zip'     id = 'RAW_NikonD40_1' target="_blank">ZIP</a></td>
+<td><a href= 'files/NikonD40_JPG.zip'     id = 'JPG_NikonD40_1' target="_blank">ZIP</a></td>
+<td><a href= 'files/NikonD40_PNG.zip'     id = 'PNG_NikonD40_1' target="_blank">ZIP</a></td>
+<td><a href= 'files/NikonD40_CHECKER.zip' id = 'CHK_NikonD40'   target="_blank">ZIP</a></td>
+<td><a href= 'files/NikonD40_gt.mat'      id = 'GTM_NikonD40'   target="_blank">MAT</a></td></tr>
+
+</tbody>
+</table>
+
+<!-- <ul><li><a href="#NikonD40">Nikon D40</a></li></ul> -->
+</p>
+* For more information about these data, please refer to <a href='files/readme.txt' id='readme' target='_blank'>README</a>.</br>
+<font color="red">** For a complementary indoor Laboratory images set, please click <a href='http://www.comp.nus.edu.sg/~whitebal/beyond/beyond.html' target='_blank'>here</a>.</font></br>
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+
+<h2 style="margin:15px auto; max-width:960px;">Results on our newly collected Datasets (click on "proposed" to download our results):</h2>
+
+<center><h3><a name="Canon1DsMkIII">Canon EOS-1Ds Mark III</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead>
+<tr style="background-color: #cccccc;">
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style='text-align: left;'><a href='files\ae_Canon1DsMkIII.mat' id='results_Canon1DsMkIII'>Proposed</a> (0.5%)</td> 
+<td>2.93</td>
+<td>2.01</td>
+<td>2.22</td>
+<td>0.59</td>
+<td>6.82</td>
+<td>16.20</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>5.16</td>
+<td>4.15</td>
+<td>4.46</td>
+<td>0.95</td>
+<td>11.00</td>
+<td>22.37</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>7.99</td>
+<td>6.19</td>
+<td>6.98</td>
+<td>1.56</td>
+<td>16.75</td>
+<td>39.12</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=3)</td>
+<td>3.81</td>
+<td>2.73</td>
+<td>3.06</td>
+<td>0.66</td>
+<td>8.52</td>
+<td>15.74</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=1, &sigma;=9)</td>
+<td>3.16</td>
+<td>2.35</td>
+<td>2.50</td>
+<td>0.64</td>
+<td>7.08</td>
+<td>16.72</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=3, &sigma;=6)</td>
+<td>3.45</td>
+<td>2.48</td>
+<td>2.74</td>
+<td>0.81</td>
+<td>7.69</td>
+<td>17.69</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=9, &sigma;=9)</td>
+<td>3.47</td>
+<td>2.44</td>
+<td>2.70</td>
+<td>0.86</td>
+<td>7.76</td>
+<td>15.73</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=2, 3%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.37</td>
+<td style='border-bottom: 1px dashed #69c;'>2.45</td>
+<td style='border-bottom: 1px dashed #69c;'>2.67</td>
+<td style='border-bottom: 1px dashed #69c;'>0.62</td>
+<td style='border-bottom: 1px dashed #69c;'>7.82</td>
+<td style='border-bottom: 1px dashed #69c;'>18.87</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=10)</td>
+<td>6.13</td>
+<td>4.30</td>
+<td>4.81</td>
+<td>1.05</td>
+<td>14.16</td>
+<td>29.09</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=7)</td>
+<td>6.07</td>
+<td>4.68</td>
+<td>4.87</td>
+<td>1.38</td>
+<td>13.35</td>
+<td>33.59</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=9)</td>
+<td>6.37</td>
+<td>4.72</td>
+<td>5.13</td>
+<td>1.18</td>
+<td>14.47</td>
+<td>28.96</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.58</td>
+<td>2.80</td>
+<td>2.97</td>
+<td>0.76</td>
+<td>7.95</td>
+<td>13.54</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>3.58</td>
+<td>2.80</td>
+<td>2.97</td>
+<td>0.76</td>
+<td>7.95</td>
+<td>13.54</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>3.21</td>
+<td>2.67</td>
+<td>2.79</td>
+<td>0.88</td>
+<td>6.43</td>
+<td>16.62</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>4.18</td>
+<td>3.04</td>
+<td>3.30</td>
+<td>0.78</td>
+<td>9.51</td>
+<td>21.43</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+<!-- <tr><td colspan="3" rowspan="1"><hr></td></tr> -->
+
+<center><h3><a name="Canon600D">Canon EOS 600D</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_Canon600D.mat' id='results_Canon600D'>Proposed</a> (2%)</td> 
+<td>2.81</td>
+<td>1.89</td>
+<td>2.12</td>
+<td>0.55</td>
+<td>6.50</td>
+<td>17.33</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>3.89</td>
+<td>2.88</td>
+<td>3.07</td>
+<td>0.83</td>
+<td>8.53</td>
+<td>15.93</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>10.96</td>
+<td>12.44</td>
+<td>11.40</td>
+<td>2.03</td>
+<td>18.75</td>
+<td>22.76</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray(p=3)</td>
+<td>3.23</td>
+<td>2.58</td>
+<td>2.63</td>
+<td>0.64</td>
+<td>7.06</td>
+<td>15.08</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=3, &sigma;=9)</td>
+<td>3.24</td>
+<td>2.28</td>
+<td>2.41</td>
+<td>0.63</td>
+<td>7.58</td>
+<td>18.38</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=9, &sigma;=3)</td>
+<td>3.22</td>
+<td>2.07</td>
+<td>2.36</td>
+<td>0.73</td>
+<td>7.48</td>
+<td>17.86</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=3, &sigma;=3)</td>
+<td>3.21</td>
+<td>2.29</td>
+<td>2.37</td>
+<td>0.80</td>
+<td>7.41</td>
+<td>17.68</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=4, 3%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.15</td>
+<td style='border-bottom: 1px dashed #69c;'>2.48</td>
+<td style='border-bottom: 1px dashed #69c;'>2.47</td>
+<td style='border-bottom: 1px dashed #69c;'>0.67</td>
+<td style='border-bottom: 1px dashed #69c;'>7.22</td>
+<td style='border-bottom: 1px dashed #69c;'>17.56</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=8)</td>
+<td>14.51</td>
+<td>14.83</td>
+<td>14.78</td>
+<td>9.98</td>
+<td>18.45</td>
+<td>22.54</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=10)</td>
+<td>15.36</td>
+<td>15.92</td>
+<td>15.73</td>
+<td>11.23</td>
+<td>18.66</td>
+<td>22.48</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=9)</td>
+<td>14.46</td>
+<td>14.72</td>
+<td>14.80</td>
+<td>10.02</td>
+<td>18.29</td>
+<td>22.59</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.29</td>
+<td>2.35</td>
+<td>2.40</td>
+<td>0.69</td>
+<td>7.93</td>
+<td>15.60</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>2.80</td>
+<td>2.32</td>
+<td>2.37</td>
+<td>0.72</td>
+<td>5.99</td>
+<td>15.43</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>2.67</td>
+<td>2.03</td>
+<td>2.18</td>
+<td>0.68</td>
+<td>5.77</td>
+<td>15.54</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>3.43</td>
+<td>2.46</td>
+<td>2.72</td>
+<td>0.78</td>
+<td>7.76</td>
+<td>20.16</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+<!-- <tr><td colspan="3" rowspan="1"><hr></td></tr> -->
+
+<center><h3><a name="FujifilmXM1">Fujifilm X-M1</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_FujifilmXM1.mat' id='results_FujifilmXM1'>Proposed</a> (2.5%)</td> 
+<td>3.15</td>
+<td>2.15</td>
+<td>2.41</td>
+<td>0.65</td>
+<td>7.30</td>
+<td>21.16</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>4.16</td>
+<td>3.30</td>
+<td>3.40</td>
+<td>0.91</td>
+<td>9.04</td>
+<td>21.06</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>10.20</td>
+<td>10.59</td>
+<td>10.25</td>
+<td>1.82</td>
+<td>18.26</td>
+<td>25.10</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=3)</td>
+<td>3.56</td>
+<td>2.81</td>
+<td>2.93</td>
+<td>0.87</td>
+<td>7.55</td>
+<td>18.55</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World </br>(p=3, &sigma;=9)</td>
+<td>3.42</td>
+<td>2.60</td>
+<td>2.72</td>
+<td>0.73</td>
+<td>7.62</td>
+<td>20.83</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=3, &sigma;=3)</td>
+<td>3.13</td>
+<td>1.99</td>
+<td>2.26</td>
+<td>0.72</td>
+<td>7.32</td>
+<td>22.79</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=3, &sigma;=3)</td>
+<td>3.12</td>
+<td>2.00</td>
+<td>2.27</td>
+<td>0.70</td>
+<td>7.23</td>
+<td>24.44</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels(p=4, 3%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.48</td>
+<td style='border-bottom: 1px dashed #69c;'>2.67</td>
+<td style='border-bottom: 1px dashed #69c;'>2.82</td>
+<td style='border-bottom: 1px dashed #69c;'>0.76</td>
+<td style='border-bottom: 1px dashed #69c;'>7.68</td>
+<td style='border-bottom: 1px dashed #69c;'>21.45</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=10)</td>
+<td>8.59</td>
+<td>8.87</td>
+<td>8.64</td>
+<td>3.44</td>
+<td>13.40</td>
+<td>21.73</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=10)</td>
+<td>7.76</td>
+<td>8.02</td>
+<td>7.70</td>
+<td>2.30</td>
+<td>13.44</td>
+<td>21.89</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=10)</td>
+<td>6.80</td>
+<td>5.90</td>
+<td>6.19</td>
+<td>2.18</td>
+<td>12.51</td>
+<td>19.68</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.98</td>
+<td>3.20</td>
+<td>3.33</td>
+<td>0.93</td>
+<td>8.82</td>
+<td>18.32</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>3.12</td>
+<td>2.70</td>
+<td>2.69</td>
+<td>0.75</td>
+<td>6.93</td>
+<td>18.75</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>2.99</td>
+<td>2.45</td>
+<td>2.55</td>
+<td>0.81</td>
+<td>5.99</td>
+<td>15.07</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>4.05</td>
+<td>2.96</td>
+<td>3.06</td>
+<td>0.86</td>
+<td>9.37</td>
+<td>28.54</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+<!-- <tr><td colspan="3" rowspan="1"><hr></td></tr> -->
+
+<center><h3><a name="NikonD5200">Nikon D5200</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_NikonD5200.mat' id='results_NikonD5200'>Proposed</a> (3%)</td> 
+<td>2.90</td>
+<td>2.08</td>
+<td>2.19</td>
+<td>0.56</td>
+<td>6.73</td>
+<td>15.50</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>4.38</td>
+<td>3.39</td>
+<td>3.59</td>
+<td>0.92</td>
+<td>9.69</td>
+<td>20.61</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>11.64</td>
+<td>11.67</td>
+<td>11.53</td>
+<td>1.77</td>
+<td>21.89</td>
+<td>53.08</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=3)</td>
+<td>3.45</td>
+<td>2.56</td>
+<td>2.74</td>
+<td>0.72</td>
+<td>7.69</td>
+<td>15.53</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=3, &sigma;=9)</td>
+<td>3.26</td>
+<td>2.31</td>
+<td>2.49</td>
+<td>0.63</td>
+<td>7.53</td>
+<td>15.54</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=3, &sigma;=3)</td>
+<td>3.37</td>
+<td>2.22</td>
+<td>2.52</td>
+<td>0.79</td>
+<td>8.42</td>
+<td>23.57</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=9, &sigma;=3)</td>
+<td>3.47</td>
+<td>2.19</td>
+<td>2.58</td>
+<td>0.73</td>
+<td>8.21</td>
+<td>24.33</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=4, 3%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.07</td>
+<td style='border-bottom: 1px dashed #69c;'>2.30</td>
+<td style='border-bottom: 1px dashed #69c;'>2.44</td>
+<td style='border-bottom: 1px dashed #69c;'>0.59</td>
+<td style='border-bottom: 1px dashed #69c;'>7.01</td>
+<td style='border-bottom: 1px dashed #69c;'>15.61</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=8)</td>
+<td>10.14</td>
+<td>10.32</td>
+<td>10.25</td>
+<td>4.35</td>
+<td>15.93</td>
+<td>33.72</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=3)</td>
+<td>13.00</td>
+<td>12.24</td>
+<td>11.75</td>
+<td>3.92</td>
+<td>24.33</td>
+<td>60.87</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=8)</td>
+<td>9.67</td>
+<td>9.24</td>
+<td>9.35</td>
+<td>4.05</td>
+<td>16.18</td>
+<td>33.73</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.97</td>
+<td>3.10</td>
+<td>3.36</td>
+<td>0.92</td>
+<td>8.18</td>
+<td>17.85</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>3.22</td>
+<td>2.43</td>
+<td>2.59</td>
+<td>0.91</td>
+<td>6.88</td>
+<td>17.65</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>3.15</td>
+<td>2.26</td>
+<td>2.49</td>
+<td>0.86</td>
+<td>6.90</td>
+<td>16.63</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>4.10</td>
+<td>2.40</td>
+<td>2.77</td>
+<td>0.74</td>
+<td>10.01</td>
+<td>56.44</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+<!-- <tr><td colspan="3" rowspan="1"><hr></td></tr> -->
+
+<center><h3><a name="OlympusEPL6">Olympus E-PL6</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_OlympusEPL6.mat' id='results_OlympusEPL6'>Proposed</a> (0.5%)</td> 
+<td>2.76</td>
+<td>1.87</td>
+<td>2.05</td>
+<td>0.55</td>
+<td>6.31</td>
+<td>23.28</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>3.44</td>
+<td>2.58</td>
+<td>2.73</td>
+<td>0.85</td>
+<td>7.41</td>
+<td>16.46</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>9.78</td>
+<td>9.50</td>
+<td>9.54</td>
+<td>1.65</td>
+<td>18.58</td>
+<td>25.11</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=9)</td>
+<td>3.16</td>
+<td>2.42</td>
+<td>2.59</td>
+<td>0.76</td>
+<td>6.78</td>
+<td>16.99</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=1, &sigma;=1)</td>
+<td>3.08</td>
+<td>2.15</td>
+<td>2.35</td>
+<td>0.72</td>
+<td>6.69</td>
+<td>22.20</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=3, &sigma;=1)</td>
+<td>3.02</td>
+<td>2.11</td>
+<td>2.26</td>
+<td>0.65</td>
+<td>6.88</td>
+<td>20.57</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=3, &sigma;=1)</td>
+<td>2.84</td>
+<td>2.18</td>
+<td>2.20</td>
+<td>0.71</td>
+<td>6.47</td>
+<td>19.58</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=2, 3%)</td>
+<td style='border-bottom: 1px dashed #69c;'>2.91</td>
+<td style='border-bottom: 1px dashed #69c;'>2.18</td>
+<td style='border-bottom: 1px dashed #69c;'>2.36</td>
+<td style='border-bottom: 1px dashed #69c;'>0.63</td>
+<td style='border-bottom: 1px dashed #69c;'>6.30</td>
+<td style='border-bottom: 1px dashed #69c;'>18.11</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=9)</td>
+<td>6.52</td>
+<td>4.39</td>
+<td>4.79</td>
+<td>1.42</td>
+<td>15.42</td>
+<td>18.85</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=10)</td>
+<td>13.20</td>
+<td>8.55</td>
+<td>10.88</td>
+<td>1.55</td>
+<td>30.21</td>
+<td>53.56</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=9)</td>
+<td>6.21</td>
+<td>4.11</td>
+<td>4.63</td>
+<td>1.38</td>
+<td>14.41</td>
+<td>34.03</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.75</td>
+<td>2.81</td>
+<td>3.00</td>
+<td>0.91</td>
+<td>8.19</td>
+<td>22.22</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>2.92</td>
+<td>2.24</td>
+<td>2.34</td>
+<td>0.86</td>
+<td>6.09</td>
+<td>15.14</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>2.86</td>
+<td>2.21</td>
+<td>2.28</td>
+<td>0.78</td>
+<td>6.14</td>
+<td>14.21</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>3.22</td>
+<td>2.17</td>
+<td>2.42</td>
+<td>0.76</td>
+<td>7.46</td>
+<td>16.53</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+<!-- <tr><td colspan="3" rowspan="1"><hr></td></tr> -->
+
+<center><h3><a name="PanasonicGX1">Panasonic Lumix DMC-GX1</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_PanasonicGX1.mat' id='results_PanasonicGX1'>Proposed</a> (3.5%)</td> 
+<td>2.96</td>
+<td>2.02</td>
+<td>2.31</td>
+<td>0.67</td>
+<td>6.66</td>
+<td>16.59</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>3.82</td>
+<td>3.06</td>
+<td>3.15</td>
+<td>0.82</td>
+<td>8.45</td>
+<td>16.74</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>13.41</td>
+<td>18.00</td>
+<td>14.98</td>
+<td>2.25</td>
+<td>20.40</td>
+<td>23.89</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=9)</td>
+<td>3.22</td>
+<td>2.30</td>
+<td>2.48</td>
+<td>0.78</td>
+<td>7.12</td>
+<td>18.47</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=1, &sigma;=1)</td>
+<td>3.12</td>
+<td>2.23</td>
+<td>2.45</td>
+<td>0.70</td>
+<td>6.86</td>
+<td>17.61</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=1, &sigma;=1)</td>
+<td>2.99</td>
+<td>2.16</td>
+<td>2.25</td>
+<td>0.56</td>
+<td>7.03</td>
+<td>21.15</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=3, &sigma;=1)</td>
+<td>2.99</td>
+<td>2.04</td>
+<td>2.26</td>
+<td>0.61</td>
+<td>6.86</td>
+<td>20.03</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=1, 5%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.05</td>
+<td style='border-bottom: 1px dashed #69c;'>2.15</td>
+<td style='border-bottom: 1px dashed #69c;'>2.30</td>
+<td style='border-bottom: 1px dashed #69c;'>0.66</td>
+<td style='border-bottom: 1px dashed #69c;'>6.95</td>
+<td style='border-bottom: 1px dashed #69c;'>17.97</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=10)</td>
+<td>6.00</td>
+<td>4.74</td>
+<td>4.98</td>
+<td>2.06</td>
+<td>12.19</td>
+<td>26.91</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=10)</td>
+<td>5.78</td>
+<td>4.85</td>
+<td>5.09</td>
+<td>1.76</td>
+<td>11.38</td>
+<td>52.08</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=10)</td>
+<td>5.28</td>
+<td>4.23</td>
+<td>4.49</td>
+<td>1.54</td>
+<td>10.70</td>
+<td>24.75</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.41</td>
+<td>2.41</td>
+<td>2.58</td>
+<td>0.68</td>
+<td>8.00</td>
+<td>19.51</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>2.93</td>
+<td>2.28</td>
+<td>2.44</td>
+<td>0.84</td>
+<td>6.07</td>
+<td>15.29</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>2.85</td>
+<td>2.22</td>
+<td>2.37</td>
+<td>0.82</td>
+<td>5.90</td>
+<td>14.54</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>3.70</td>
+<td>2.28</td>
+<td>2.67</td>
+<td>0.79</td>
+<td>8.74</td>
+<td>21.34</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+<!-- <tr><td colspan="3" rowspan="1"><hr></td></tr> -->
+
+<center><h3><a name="SamsungNX2000">Samsung NX2000</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_SamsungNX2000.mat' id='results_SamsungNX2000'>Proposed</a> (3%)</td> 
+<td>2.91</td>
+<td>2.03</td>
+<td>2.22</td>
+<td>0.66</td>
+<td>6.48</td>
+<td>15.52</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>3.90</td>
+<td>3.00</td>
+<td>3.15</td>
+<td>0.81</td>
+<td>8.51</td>
+<td>17.32</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>11.97</td>
+<td>12.99</td>
+<td>12.45</td>
+<td>2.59</td>
+<td>20.23</td>
+<td>23.99</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=9)</td>
+<td>3.17</td>
+<td>2.33</td>
+<td>2.45</td>
+<td>0.78</td>
+<td>6.92</td>
+<td>13.80</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=1, &sigma;=1)</td>
+<td>3.22</td>
+<td>2.57</td>
+<td>2.66</td>
+<td>0.77</td>
+<td>6.85</td>
+<td>12.41</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=1, &sigma;=1)</td>
+<td>3.09</td>
+<td>2.23</td>
+<td>2.32</td>
+<td>0.71</td>
+<td>7.00</td>
+<td>20.90</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=9, &sigma;=3)</td>
+<td>3.18</td>
+<td>2.32</td>
+<td>2.41</td>
+<td>0.74</td>
+<td>7.23</td>
+<td>20.85</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=4, 3%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.13</td>
+<td style='border-bottom: 1px dashed #69c;'>2.49</td>
+<td style='border-bottom: 1px dashed #69c;'>2.64</td>
+<td style='border-bottom: 1px dashed #69c;'>0.81</td>
+<td style='border-bottom: 1px dashed #69c;'>6.57</td>
+<td style='border-bottom: 1px dashed #69c;'>14.11</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=10)</td>
+<td>7.74</td>
+<td>7.91</td>
+<td>7.70</td>
+<td>2.65</td>
+<td>13.01</td>
+<td>18.09</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=4)</td>
+<td>8.06</td>
+<td>6.12</td>
+<td>6.56</td>
+<td>3.00</td>
+<td>16.27</td>
+<td>29.40</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=10)</td>
+<td>6.80</td>
+<td>6.37</td>
+<td>6.40</td>
+<td>2.25</td>
+<td>11.98</td>
+<td>18.35</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.98</td>
+<td>3.00</td>
+<td>3.27</td>
+<td>0.93</td>
+<td>8.62</td>
+<td>18.12</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>3.11</td>
+<td>2.51</td>
+<td>2.63</td>
+<td>0.80</td>
+<td>6.46</td>
+<td>15.76</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>2.94</td>
+<td>2.29</td>
+<td>2.44</td>
+<td>0.75</td>
+<td>6.22</td>
+<td>14.04</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>3.66</td>
+<td>2.77</td>
+<td>2.94</td>
+<td>0.75</td>
+<td>8.16</td>
+<td>15.25</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+
+<center><h3><a name="SonyA57">Sony SLT-A57</a></h3>
+<table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_SonyA57.mat' id='results_SonyA57'>Proposed</a> (1%)</td> 
+<td>2.93</td>
+<td>2.33</td>
+<td>2.42</td>
+<td>0.78</td>
+<td>6.13</td>
+<td>12.39</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>4.59</td>
+<td>3.46</td>
+<td>3.81</td>
+<td>1.16</td>
+<td>9.85</td>
+<td>17.84</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>9.91</td>
+<td>7.44</td>
+<td>8.78</td>
+<td>1.44</td>
+<td>21.27</td>
+<td>39.78</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=3)</td>
+<td>3.67</td>
+<td>2.94</td>
+<td>3.03</td>
+<td>0.98</td>
+<td>7.75</td>
+<td>13.79</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=1, &sigma;=9)</td>
+<td>3.20</td>
+<td>2.56</td>
+<td>2.68</td>
+<td>0.85</td>
+<td>6.68</td>
+<td>17.89</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=9, &sigma;=9)</td>
+<td>3.35</td>
+<td>2.58</td>
+<td>2.76</td>
+<td>0.79</td>
+<td>7.18</td>
+<td>15.04</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=3, &sigma;=3)</td>
+<td>3.36</td>
+<td>2.70</td>
+<td>2.80</td>
+<td>0.89</td>
+<td>7.14</td>
+<td>15.78</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=2, 3%)</td>
+<td style='border-bottom: 1px dashed #69c;'>3.24</td>
+<td style='border-bottom: 1px dashed #69c;'>2.62</td>
+<td style='border-bottom: 1px dashed #69c;'>2.73</td>
+<td style='border-bottom: 1px dashed #69c;'>0.81</td>
+<td style='border-bottom: 1px dashed #69c;'>6.78</td>
+<td style='border-bottom: 1px dashed #69c;'>12.94</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=7)</td>
+<td>5.27</td>
+<td>4.26</td>
+<td>4.45</td>
+<td>1.28</td>
+<td>11.16</td>
+<td>50.45</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=8)</td>
+<td>4.40</td>
+<td>3.30</td>
+<td>3.45</td>
+<td>0.99</td>
+<td>9.83</td>
+<td>32.70</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=7)</td>
+<td>5.32</td>
+<td>3.81</td>
+<td>4.13</td>
+<td>1.11</td>
+<td>11.93</td>
+<td>50.42</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>3.50</td>
+<td>2.36</td>
+<td>2.57</td>
+<td>0.78</td>
+<td>8.02</td>
+<td>18.05</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>3.24</td>
+<td>2.70</td>
+<td>2.82</td>
+<td>0.93</td>
+<td>6.55</td>
+<td>15.63</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>3.06</td>
+<td>2.58</td>
+<td>2.74</td>
+<td>0.87</td>
+<td>6.17</td>
+<td>14.78</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>3.45</td>
+<td>2.88</td>
+<td>2.95</td>
+<td>0.83</td>
+<td>7.18</td>
+<td>12.96</td>
+</tr>
+</tbody>
+</table>
+</center></br></br>
+<!-- <tr><td colspan="3" rowspan="1"><hr></td></tr> -->
+
+
+<center><h3><a name="NikonD40">Nikon D40</a></h3><table id="results-table">
+<col WIDTH="50%" style="background-color: #cccccc;"/>
+<thead style="background-color: #cccccc;">
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">MEAN</th>
+<th scope="col">MEDIAN</th>
+<th scope="col">TRIMEAN</th>
+<th scope="col">BEST 25%</th>
+<th scope="col">WORST 25%</th>
+<th scope="col">MAX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'><a href='files\ae_NikonD40.mat' id='results_NikonD40'>Proposed</a> (3.5%)</td> 
+<td>3.81</td>
+<td>2.72</td>
+<td>3.10</td>
+<td>0.95</td>
+<td>8.07</td>
+<td>17.20</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>4.60</td>
+<td>3.44</td>
+<td>3.69</td>
+<td>0.98</td>
+<td>10.06</td>
+<td>18.35</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>12.75</td>
+<td>15.32</td>
+<td>13.80</td>
+<td>3.69</td>
+<td>19.78</td>
+<td>22.91</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray (p=3)</td>
+<td>3.93</td>
+<td>3.24</td>
+<td>3.38</td>
+<td>1.11</td>
+<td>7.98</td>
+<td>18.65</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</br>(p=3, &sigma;=1)</td>
+<td>4.04</td>
+<td>2.92</td>
+<td>3.22</td>
+<td>1.07</td>
+<td>8.39</td>
+<td>18.24</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</br>(p=3, &sigma;=9)</td>
+<td>3.94</td>
+<td>2.99</td>
+<td>3.33</td>
+<td>0.88</td>
+<td>8.72</td>
+<td>15.77</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</br>(p=9, &sigma;=3)</td>
+<td>3.95</td>
+<td>2.95</td>
+<td>3.21</td>
+<td>1.08</td>
+<td>8.34</td>
+<td>19.00</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels (p=2, 5%)</td>
+<td style='border-bottom: 1px dashed #69c;'>4.09</td>
+<td style='border-bottom: 1px dashed #69c;'>3.13</td>
+<td style='border-bottom: 1px dashed #69c;'>3.38</td>
+<td style='border-bottom: 1px dashed #69c;'>0.99</td>
+<td style='border-bottom: 1px dashed #69c;'>8.86</td>
+<td style='border-bottom: 1px dashed #69c;'>20.94</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</br>(&sigma;=10)</td>
+<td>11.27</td>
+<td>10.99</td>
+<td>11.11</td>
+<td>4.44</td>
+<td>18.39</td>
+<td>23.61</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</br>(&sigma;=9)</td>
+<td>12.17</td>
+<td>11.64</td>
+<td>12.01</td>
+<td>4.54</td>
+<td>19.45</td>
+<td>24.10</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</br>(&sigma;=10)</td>
+<td>11.27</td>
+<td>11.32</td>
+<td>11.30</td>
+<td>4.20</td>
+<td>18.29</td>
+<td>22.70</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>4.91</td>
+<td>3.53</td>
+<td>4.00</td>
+<td>0.90</td>
+<td>10.54</td>
+<td>21.12</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>3.80</td>
+<td>2.99</td>
+<td>3.11</td>
+<td>0.99</td>
+<td>7.97</td>
+<td>17.70</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>3.59</td>
+<td>2.89</td>
+<td>2.96</td>
+<td>0.86</td>
+<td>7.61</td>
+<td>16.96</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>4.36</td>
+<td>3.51</td>
+<td>3.84</td>
+<td>1.27</td>
+<td>8.53</td>
+<td>16.25</td>
+</tr>
+</tbody>
+</table>
+</center>
+
+* All other methods were executed/implemented based on the released source codes available online. </br>
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+
+<h2 style="margin:15px auto; max-width:960px;">Timing Comparison:</h2>
+Time for training and testing on the Canon EOS 1Ds Mark III dataset in minutes:
+<center><table id="results-table">
+<thead>
+<tr>
+<th scope="col">METHOD</th>
+<th scope="col">TRAINING</th>
+<th scope="col">TESTING</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td width='250px' style='text-align: left;'>Proposed</td> 
+<td>-</td>
+<td>9.9</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Gray-World</td> 
+<td>-</td>
+<td>7.8</td>
+</tr>
+<tr>
+<td style='text-align: left;'>White-Patch</td>
+<td>-</td>
+<td>8.0</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Shades-of-Gray</td>
+<td>-</td>
+<td>14.6</td>
+</tr>
+<tr>
+<td style='text-align: left;'>General Gray-World</td>
+<td>-</td>
+<td>27.3</td>
+</tr>
+<tr>
+<td style='text-align: left;'>1st-order Gray-Edge</td>
+<td>-</td>
+<td>29.5</td>
+</tr>
+<tr>
+<td style='text-align: left;'>2nd-order Gray-Edge</td>
+<td>-</td>
+<td>34.6</td>
+<tr>
+<td style='text-align: left; border-bottom: 1px dashed #69c;'>Bright Pixels</td>
+<td style='border-bottom: 1px dashed #69c;'>-</td>
+<td style='border-bottom: 1px dashed #69c;'>13.6</td>
+</tr>
+</tr>
+<tr>
+<td style='text-align: left;'>Pixel-based Gamut</td>
+<td>254</td>
+<td>254</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Edge-based Gamut</td>
+<td>245</td>
+<td>184</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Intersection-based Gamut</td>
+<td>251</td>
+<td>235</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Bayesian</td>
+<td>32.2</td>
+<td>2316.3</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (ML)</td>
+<td>133.2</td>
+<td>168.3</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Spatio-spectral (GenPrior)</td>
+<td>126.9</td>
+<td>61.7</td>
+</tr>
+<tr>
+<td style='text-align: left;'>Natural Image Statistics</td>
+<td>453.2</td>
+<td>25.2</td>
+</tr>
+</tbody>
+</table>
+</center>
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+
+<h2 style="margin:15px auto; max-width:960px;">Source Code:</h2>
+Click <a href='./files/illuminantEstimator.m'>here</a> to download the source code of the proposed algorithm.
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+
+<h2 style="margin:15px auto; max-width:960px;">Acknowledgements:</h2>
+<p>This study was funded by Agency for Science, Technology and Research (grant No. 1121202020). We thank our photographer Mr. Looi Wenhe (Russell) for his hard work and effort in helping collect our dataset.</p>
+
+<tr><td colspan="3" rowspan="1"><hr></td></tr>
+<center> This page was last modified on: November 11, 2015 </center>
+
+</body>
+</html>
